@@ -22,6 +22,7 @@
 #include "gc.h"
 #include "constant.h"
 #include <stdio.h>
+#include <assert.h>
 #include <setjmp.h>
 #include <sys/types.h>
 
@@ -2105,6 +2106,24 @@ ready_to_gc(rb_objspace_t *objspace)
     return TRUE;
 }
 
+static VALUE *ruby_stack_lower_bound = 0, *ruby_stack_upper_bound = 0;
+static char ruby_stack_is_bound = 0;
+
+void
+ruby_bind_stack(void *lower_bound, void *upper_bound)
+{
+    assert(upper_bound > lower_bound && lower_bound > 0);
+    ruby_stack_lower_bound = lower_bound;
+    ruby_stack_upper_bound = upper_bound;
+    ruby_stack_is_bound = 1;
+}
+
+#define FIX_STACK_BOUNDS(start, end, th) \
+     if (ruby_stack_is_bound && th == th->vm->main_thread) { \
+          if (start < ruby_stack_lower_bound) { start = ruby_stack_lower_bound; } \
+          if (end   > ruby_stack_upper_bound) { end   = ruby_stack_upper_bound; } \
+     }
+
 static void
 before_gc_sweep(rb_objspace_t *objspace)
 {
@@ -2431,6 +2450,7 @@ mark_current_machine_context(rb_objspace_t *objspace, rb_thread_t *th)
 
     SET_STACK_END;
     GET_STACK_BOUNDS(stack_start, stack_end, 1);
+    FIX_STACK_BOUNDS(stack_start, stack_end, th);
 
     mark_locations_array(objspace, save_regs_gc_mark.v, numberof(save_regs_gc_mark.v));
 
@@ -2560,6 +2580,7 @@ rb_gc_mark_machine_stack(rb_thread_t *th)
     VALUE *stack_start, *stack_end;
 
     GET_STACK_BOUNDS(stack_start, stack_end, 0);
+    FIX_STACK_BOUNDS(stack_start, stack_end, th);
     rb_gc_mark_locations(stack_start, stack_end);
 #ifdef __ia64
     rb_gc_mark_locations(th->machine_register_stack_start, th->machine_register_stack_end);

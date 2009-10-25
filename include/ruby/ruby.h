@@ -1221,6 +1221,17 @@ void ruby_init_stack(volatile VALUE*);
 #define RUBY_INIT_STACK \
     VALUE variable_in_this_stack_frame; \
     ruby_init_stack(&variable_in_this_stack_frame);
+/*
+ *  Binds the stack of Ruby's main thread to the region of memory that spans
+ *  inclusively from the given lower boundary to the given upper boundary:
+ *
+ *      (lower) <= (stack pointer of Ruby's main thread) <= (upper)
+ *
+ *  These boundaries do not protect Ruby's main thread against stack
+ *  overflow and they do not apply to non-main Ruby threads (whose stacks
+ *  are dynamically allocated and managed by the native Operating System).
+ */
+void ruby_bind_stack(void *lower_bound, void *upper_bound);
 void ruby_init(void);
 void *ruby_options(int, char**);
 int ruby_run_node(void *);
