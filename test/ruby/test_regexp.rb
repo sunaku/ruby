@@ -62,7 +62,7 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_to_s
-    assert_equal '(?-mix:\x00)', Regexp.new("\0").to_s
+    assert_equal '(?-mixv:\x00)', Regexp.new("\0").to_s
   end
 
   def test_union
@@ -179,15 +179,17 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_to_s2
-    assert_equal('(?-mix:foo)', /(?:foo)/.to_s)
-    assert_equal('(?m-ix:foo)', /(?:foo)/m.to_s)
-    assert_equal('(?mi-x:foo)', /(?:foo)/mi.to_s)
-    assert_equal('(?mix:foo)', /(?:foo)/mix.to_s)
-    assert_equal('(?m-ix:foo)', /(?m-ix:foo)/.to_s)
-    assert_equal('(?mi-x:foo)', /(?mi-x:foo)/.to_s)
-    assert_equal('(?mix:foo)', /(?mix:foo)/.to_s)
-    assert_equal('(?mix:)', /(?mix)/.to_s)
-    assert_equal('(?-mix:(?mix:foo) )', /(?mix:foo) /.to_s)
+    assert_equal('(?-mixv:foo)', /(?:foo)/.to_s)
+    assert_equal('(?m-ixv:foo)', /(?:foo)/m.to_s)
+    assert_equal('(?mi-xv:foo)', /(?:foo)/mi.to_s)
+    assert_equal('(?mix-v:foo)', /(?:foo)/mix.to_s)
+    assert_equal('(?mixv:foo)', /(?:foo)/mixv.to_s)
+    assert_equal('(?m-ixv:foo)', /(?m-ixv:foo)/.to_s)
+    assert_equal('(?mi-xv:foo)', /(?mi-xv:foo)/.to_s)
+    assert_equal('(?mix-v:foo)', /(?mix-v:foo)/.to_s)
+    assert_equal('(?mixv:foo)', /(?mixv:foo)/.to_s)
+    assert_equal('(?mixv:)', /(?mixv)/.to_s)
+    assert_equal('(?-mixv:(?mixv:foo) )', /(?mixv:foo) /.to_s)
   end
 
   def test_casefold_p
@@ -199,6 +201,7 @@ class TestRegexp < Test::Unit::TestCase
   def test_options
     assert_equal(Regexp::IGNORECASE, /a/i.options)
     assert_equal(Regexp::EXTENDED, /a/x.options)
+    assert_equal(Regexp::NEGATED, /a/v.options)
     assert_equal(Regexp::MULTILINE, /a/m.options)
   end
 
@@ -419,7 +422,7 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal(/foo/, Regexp.union(/foo/))
     assert_equal(/foo/, Regexp.union([/foo/]))
     assert_equal(/\t/, Regexp.union("\t"))
-    assert_equal(/(?-mix:\u3042)|(?-mix:\u3042)/, Regexp.union(/\u3042/, /\u3042/))
+    assert_equal(/(?-mixv:\u3042)|(?-mixv:\u3042)/, Regexp.union(/\u3042/, /\u3042/))
     assert_equal("\u3041", "\u3041"[Regexp.union(/\u3042/, "\u3041")])
   end
 
@@ -861,5 +864,50 @@ class TestRegexp < Test::Unit::TestCase
     error = assert_raise(SyntaxError) {eval('/\x/', nil, bug3539)}
     assert_match(/invalid hex escape/, error.message)
     assert_equal(1, error.message.scan(/.*invalid .*escape.*/i).size, bug3539)
+  end
+
+  def test_negated_regexp_creation
+    assert_nothing_raised { eval("/ruby/v") }
+    assert_nothing_raised { eval("/(?v:ruby)/") }
+    assert_nothing_raised { eval("/(?-v:ruby)/") }
+
+    negated = Regexp.new("ruby", Regexp::NEGATED)
+    assert_equal(/ruby/v, negated)
+    assert_equal(/ruby/v, Regexp.new(negated))
+    assert_equal(/ruby/v, Regexp.new(Regexp.new(negated)))
+    assert_equal(/(?v-mix:ruby)/, Regexp.new(negated.to_s))
+  end
+
+  def test_negated_regexp_matching
+    assert_match(/ruby/, "ruby")
+    assert_match(/ruby/, "rubyperl")
+    assert_match(/ruby/, "perlruby")
+    assert_no_match(/ruby/, "perl")
+
+    assert_match(/(?-v:ruby)/, "ruby")
+    assert_match(/(?-v:ruby)/, "rubyperl")
+    assert_match(/(?-v:ruby)/, "perlruby")
+    assert_no_match(/(?-v:ruby)/, "perl")
+
+    assert_no_match(/ruby/v, "ruby")
+    assert_no_match(/ruby/v, "rubyperl")
+    assert_no_match(/ruby/v, "perlruby")
+    assert_match(/ruby/v, "perl")
+
+    assert_no_match(/(?v:ruby)/, "ruby")
+    assert_no_match(/(?v:ruby)/, "rubyperl")
+    assert_match(/(?v:ruby)/, "perlruby")
+    assert_match(/(?v:ruby)/, "perl")
+
+    assert_no_match(/a(?v:b)c/, "abc")
+    assert_match(/a(?v:b)c/, "ac")
+    assert_match(/a(?v:b)c/, "axc")
+    assert_match(/a(?v:b)c/, "axbc")
+    assert_match(/a(?v:b)c/, "axbcbc")
+
+    languages = %w[ruby perl python lisp smalltalk]
+    assert_equal %w[perl lisp smalltalk], languages.grep(/l/)
+    assert_equal %w[ruby python], languages.grep(/l/v)
+    assert_equal %w[ruby perl python smalltalk], languages.grep(/(?v:l)/)
   end
 end

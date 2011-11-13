@@ -244,7 +244,7 @@ rb_memsearch(const void *x0, long m, const void *y0, long n, rb_encoding *enc)
 #define KCODE_FIXED FL_USER4
 
 #define ARG_REG_OPTION_MASK \
-    (ONIG_OPTION_IGNORECASE|ONIG_OPTION_MULTILINE|ONIG_OPTION_EXTEND)
+    (ONIG_OPTION_IGNORECASE|ONIG_OPTION_MULTILINE|ONIG_OPTION_EXTEND|ONIG_OPTION_NEGATE)
 #define ARG_ENCODING_FIXED    16
 #define ARG_ENCODING_NONE     32
 
@@ -263,6 +263,9 @@ char_to_option(int c)
       case 'm':
 	val = ONIG_OPTION_MULTILINE;
 	break;
+      case 'v':
+	val = ONIG_OPTION_NEGATE;
+	break;
       default:
 	val = 0;
 	break;
@@ -271,12 +274,13 @@ char_to_option(int c)
 }
 
 static char *
-option_to_str(char str[4], int options)
+option_to_str(char str[5], int options)
 {
     char *p = str;
     if (options & ONIG_OPTION_MULTILINE) *p++ = 'm';
     if (options & ONIG_OPTION_IGNORECASE) *p++ = 'i';
     if (options & ONIG_OPTION_EXTEND) *p++ = 'x';
+    if (options & ONIG_OPTION_NEGATE) *p++ = 'v';
     *p = 0;
     return str;
 }
@@ -422,7 +426,7 @@ rb_reg_desc(const char *s, long len, VALUE re)
     rb_reg_expr_str(str, s, len, enc, resenc);
     rb_str_buf_cat2(str, "/");
     if (re) {
-	char opts[4];
+	char opts[5];
 	rb_reg_check(re);
 	if (*option_to_str(opts, RREGEXP(re)->ptr->options))
 	    rb_str_buf_cat2(str, opts);
@@ -494,22 +498,22 @@ rb_reg_inspect(VALUE re)
  *  generally more readable version of <i>rxp</i>.
  *
  *      r1 = /ab+c/ix           #=> /ab+c/ix
- *      s1 = r1.to_s            #=> "(?ix-m:ab+c)"
- *      r2 = Regexp.new(s1)     #=> /(?ix-m:ab+c)/
+ *      s1 = r1.to_s            #=> "(?ix-mv:ab+c)"
+ *      r2 = Regexp.new(s1)     #=> /(?ix-mv:ab+c)/
  *      r1 == r2                #=> false
  *      r1.source               #=> "ab+c"
- *      r2.source               #=> "(?ix-m:ab+c)"
+ *      r2.source               #=> "(?ix-mv:ab+c)"
  */
 
 static VALUE
 rb_reg_to_s(VALUE re)
 {
     int options, opt;
-    const int embeddable = ONIG_OPTION_MULTILINE|ONIG_OPTION_IGNORECASE|ONIG_OPTION_EXTEND;
+    const int embeddable = ARG_REG_OPTION_MASK;
     long len;
     const UChar* ptr;
     VALUE str = rb_str_buf_new2("(?");
-    char optbuf[5];
+    char optbuf[6];
     rb_encoding *enc = rb_enc_get(re);
 
     rb_reg_check(re);
@@ -597,7 +601,7 @@ rb_reg_raise(const char *s, long len, const char *err, VALUE re)
 static VALUE
 rb_enc_reg_error_desc(const char *s, long len, rb_encoding *enc, int options, const char *err)
 {
-    char opts[6];
+    char opts[7];
     VALUE desc = rb_str_buf_new2(err);
     rb_encoding *resenc = rb_default_internal_encoding();
     if (resenc == NULL) resenc = rb_default_external_encoding();
@@ -2883,10 +2887,11 @@ rb_reg_match_m(int argc, VALUE *argv, VALUE re)
  *  options are propagated, and new options may not be specified (a change as of
  *  Ruby 1.8). If <i>options</i> is a <code>Fixnum</code>, it should be one or
  *  more of the constants <code>Regexp::EXTENDED</code>,
- *  <code>Regexp::IGNORECASE</code>, and <code>Regexp::MULTILINE</code>,
- *  <em>or</em>-ed together. Otherwise, if <i>options</i> is not
- *  <code>nil</code>, the regexp will be case insensitive.
- *  When the <i>lang</i> parameter is `n' or `N' sets the regexp no encoding.
+ *  <code>Regexp::IGNORECASE</code>, <code>Regexp::MULTILINE</code>, and
+ *  <code>Regexp::NEGATED</code>, <em>or</em>-ed together. Otherwise, if
+ *  <i>options</i> is not <code>nil</code>, the regexp will be case
+ *  insensitive.  When the <i>lang</i> parameter is `n' or `N' sets the regexp
+ *  no encoding.
  *
  *     r1 = Regexp.new('^a-z+:\\s+\w+')           #=> /^a-z+:\s+\w+/
  *     r2 = Regexp.new('cat', true)               #=> /cat/i
@@ -3239,7 +3244,7 @@ rb_reg_s_union(VALUE self, VALUE args0)
  *     Regexp.union("a+b*c")                #=> /a\+b\*c/
  *     Regexp.union("skiing", "sledding")   #=> /skiing|sledding/
  *     Regexp.union(["skiing", "sledding"]) #=> /skiing|sledding/
- *     Regexp.union(/dogs/, /cats/i)        #=> /(?-mix:dogs)|(?i-mx:cats)/
+ *     Regexp.union(/dogs/, /cats/i)        #=> /(?-mixv:dogs)|(?i-mxv:cats)/
  */
 static VALUE
 rb_reg_s_union_m(VALUE self, VALUE args)
@@ -3562,6 +3567,8 @@ Init_Regexp(void)
     rb_define_const(rb_cRegexp, "IGNORECASE", INT2FIX(ONIG_OPTION_IGNORECASE));
     /* see Regexp.options and Regexp.new */
     rb_define_const(rb_cRegexp, "EXTENDED", INT2FIX(ONIG_OPTION_EXTEND));
+    /* see Regexp.options and Regexp.new */
+    rb_define_const(rb_cRegexp, "NEGATED", INT2FIX(ONIG_OPTION_NEGATE));
     /* see Regexp.options and Regexp.new */
     rb_define_const(rb_cRegexp, "MULTILINE", INT2FIX(ONIG_OPTION_MULTILINE));
     /* see Regexp.options and Regexp.new */

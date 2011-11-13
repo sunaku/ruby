@@ -349,7 +349,8 @@ typedef unsigned int        OnigOptionType;
 #define ONIG_OPTION_NONE                 0U
 #define ONIG_OPTION_IGNORECASE           1U
 #define ONIG_OPTION_EXTEND               (ONIG_OPTION_IGNORECASE         << 1)
-#define ONIG_OPTION_MULTILINE            (ONIG_OPTION_EXTEND             << 1)
+#define ONIG_OPTION_NEGATE               (ONIG_OPTION_EXTEND             << 1)
+#define ONIG_OPTION_MULTILINE            (ONIG_OPTION_NEGATE             << 1)
 #define ONIG_OPTION_SINGLELINE           (ONIG_OPTION_MULTILINE          << 1)
 #define ONIG_OPTION_FIND_LONGEST         (ONIG_OPTION_SINGLELINE         << 1)
 #define ONIG_OPTION_FIND_NOT_EMPTY       (ONIG_OPTION_FIND_LONGEST       << 1)
@@ -496,6 +497,7 @@ ONIG_EXTERN const OnigSyntaxType*   OnigDefaultSyntax;
 #define ONIG_NORMAL                                            0
 #define ONIG_MISMATCH                                         -1
 #define ONIG_NO_SUPPORT_CONFIG                                -2
+#define ONIG_MISMATCH_FROM_NEGATE                             -3
 
 /* internal error */
 #define ONIGERR_MEMORY                                         -5

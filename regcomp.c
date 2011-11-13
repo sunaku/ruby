@@ -1139,11 +1139,16 @@ compile_quantifier_node(QtfrNode* qn, regex_t* reg)
     if (r) return r;
 
     for (i = 0; i < n; i++) {
+      if (IS_NEGATE(reg->options)) tlen++; /* for OP_NEGATE added below */
       r = add_opcode_rel_addr(reg, OP_PUSH,
 			   (n - i) * tlen + (n - i - 1) * SIZE_OP_PUSH);
       if (r) return r;
       r = compile_tree(qn->target, reg);
       if (r) return r;
+      if (IS_NEGATE(reg->options)) {
+        r = add_opcode(reg, OP_NEGATE);
+        if (r) return r;
+      }
     }
   }
   else if (!qn->greedy && qn->upper == 1 && qn->lower == 0) { /* '??' */
@@ -5792,6 +5797,7 @@ OnigOpInfoType OnigOpInfo[] = {
   { OP_MEMORY_END_REC,      "mem-end-rec",          ARG_MEMNUM  },
   { OP_SET_OPTION_PUSH,     "set-option-push",      ARG_OPTION  },
   { OP_SET_OPTION,          "set-option",           ARG_OPTION  },
+  { OP_NEGATE,              "negate",               ARG_NON },
   { OP_FAIL,                "fail",                 ARG_NON },
   { OP_JUMP,                "jump",                 ARG_RELADDR },
   { OP_PUSH,                "push",                 ARG_RELADDR },
@@ -6280,8 +6286,7 @@ print_indent_tree(FILE* f, Node* node, int indent)
     fprintf(f, "<enclose:%"PRIxPTR"> ", (intptr_t)node);
     switch (NENCLOSE(node)->type) {
     case ENCLOSE_OPTION:
-      fprintf(f, "option:%d\n", NENCLOSE(node)->option);
-      print_indent_tree(f, NENCLOSE(node)->target, indent + add);
+      fprintf(f, "option:%d", NENCLOSE(node)->option);
       break;
     case ENCLOSE_MEMORY:
       fprintf(f, "memory:%d", NENCLOSE(node)->regnum);

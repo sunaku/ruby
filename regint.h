@@ -320,6 +320,7 @@ typedef unsigned int  BitStatusType;
 #define IS_MULTILINE(option)      ((option) & ONIG_OPTION_MULTILINE)
 #define IS_IGNORECASE(option)     ((option) & ONIG_OPTION_IGNORECASE)
 #define IS_EXTEND(option)         ((option) & ONIG_OPTION_EXTEND)
+#define IS_NEGATE(option)         ((option) & ONIG_OPTION_NEGATE)
 #define IS_FIND_LONGEST(option)   ((option) & ONIG_OPTION_FIND_LONGEST)
 #define IS_FIND_NOT_EMPTY(option) ((option) & ONIG_OPTION_FIND_NOT_EMPTY)
 #define IS_FIND_CONDITION(option) ((option) & \
@@ -535,6 +536,7 @@ enum OpCode {
   OP_MEMORY_END,
   OP_MEMORY_END_REC,      /* push marker to stack */
 
+  OP_NEGATE,             /* pop stack twice and move */
   OP_FAIL,               /* pop stack and move */
   OP_JUMP,
   OP_PUSH,

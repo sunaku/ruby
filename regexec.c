@@ -2700,6 +2700,10 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
       goto finish;
       break;
 
+    case OP_NEGATE:
+      STACK_POP_ONE;
+      best_len = ONIG_MISMATCH_FROM_NEGATE;
+      /* fall */
     fail:
       MOP_OUT;
       /* fall */
@@ -3433,7 +3437,9 @@ onig_search(regex_t* reg, const UChar* str, const UChar* end,
 #ifdef USE_FIND_LONGEST_SEARCH_ALL_OF_RANGE
 #define MATCH_AND_RETURN_CHECK(upper_range) \
   r = match_at(reg, str, end, (upper_range), s, prev, &msa); \
-  if (r != ONIG_MISMATCH) {\
+  if (r == ONIG_MISMATCH_FROM_NEGATE)\
+    goto mismatch;\
+  else if (r != ONIG_MISMATCH) {\
     if (r >= 0) {\
       if (! IS_FIND_LONGEST(reg->options)) {\
         goto match;\
@@ -3444,7 +3450,9 @@ onig_search(regex_t* reg, const UChar* str, const UChar* end,
 #else
 #define MATCH_AND_RETURN_CHECK(upper_range) \
   r = match_at(reg, str, end, (upper_range), s, prev, &msa); \
-  if (r != ONIG_MISMATCH) {\
+  if (r == ONIG_MISMATCH_FROM_NEGATE)\
+    goto mismatch_no_msa;\
+  else if (r != ONIG_MISMATCH) {\
     if (r >= 0) {\
       goto match;\
     }\
@@ -3455,7 +3463,9 @@ onig_search(regex_t* reg, const UChar* str, const UChar* end,
 #ifdef USE_FIND_LONGEST_SEARCH_ALL_OF_RANGE
 #define MATCH_AND_RETURN_CHECK(none) \
   r = match_at(reg, str, end, s, prev, &msa);\
-  if (r != ONIG_MISMATCH) {\
+  if (r == ONIG_MISMATCH_FROM_NEGATE)\
+    goto mismatch;\
+  else if (r != ONIG_MISMATCH) {\
     if (r >= 0) {\
       if (! IS_FIND_LONGEST(reg->options)) {\
         goto match;\
@@ -3466,7 +3476,9 @@ onig_search(regex_t* reg, const UChar* str, const UChar* end,
 #else
 #define MATCH_AND_RETURN_CHECK(none) \
   r = match_at(reg, str, end, s, prev, &msa);\
-  if (r != ONIG_MISMATCH) {\
+  if (r == ONIG_MISMATCH_FROM_NEGATE)\
+    goto mismatch_no_msa;\
+  else if (r != ONIG_MISMATCH) {\
     if (r >= 0) {\
       goto match;\
     }\
@@ -3753,7 +3765,7 @@ onig_search(regex_t* reg, const UChar* str, const UChar* end,
   if (r != ONIG_MISMATCH)
     fprintf(stderr, "onig_search: error %d\n", r);
 #endif
-  return r;
+  goto negate;
 
  mismatch_no_msa:
   r = ONIG_MISMATCH;
@@ -3763,12 +3775,17 @@ onig_search(regex_t* reg, const UChar* str, const UChar* end,
   if (r != ONIG_MISMATCH)
     fprintf(stderr, "onig_search: error %d\n", r);
 #endif
-  return r;
+  goto negate;
 
  match:
   ONIG_STATE_DEC_THREAD(reg);
   MATCH_ARG_FREE(msa);
-  return s - str;
+  r = s - str;
+  /* fall */
+ negate:
+  if (r >= ONIG_MISMATCH && IS_NEGATE(reg->options))
+    return r == ONIG_MISMATCH ? ONIG_NORMAL : ONIG_MISMATCH;
+  return r;
 }
 
 extern OnigEncoding
