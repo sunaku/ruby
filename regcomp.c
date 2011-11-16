@@ -1139,16 +1139,11 @@ compile_quantifier_node(QtfrNode* qn, regex_t* reg)
     if (r) return r;
 
     for (i = 0; i < n; i++) {
-      if (IS_NEGATE(reg->options)) tlen++; /* for OP_NEGATE added below */
       r = add_opcode_rel_addr(reg, OP_PUSH,
 			   (n - i) * tlen + (n - i - 1) * SIZE_OP_PUSH);
       if (r) return r;
       r = compile_tree(qn->target, reg);
       if (r) return r;
-      if (IS_NEGATE(reg->options)) {
-        r = add_opcode(reg, OP_NEGATE);
-        if (r) return r;
-      }
     }
   }
   else if (!qn->greedy && qn->upper == 1 && qn->lower == 0) { /* '??' */
@@ -1446,7 +1441,7 @@ compile_anchor_node(AnchorNode* node, regex_t* reg)
     if (r) return r;
     r = compile_tree(node->target, reg);
     if (r) return r;
-    r = add_opcode(reg, OP_FAIL_POS);
+    r = add_opcode(reg, IS_NEGATE(reg->options) ? OP_NEGATE : OP_FAIL_POS);
     break;
 
   case ANCHOR_LOOK_BEHIND:

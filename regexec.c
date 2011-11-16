@@ -2629,6 +2629,9 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
       continue;
       break;
 
+    case OP_NEGATE:
+      best_len = ONIG_MISMATCH_FROM_NEGATE;
+      /* fall */
     case OP_FAIL_POS:  MOP_IN(OP_FAIL_POS);
       STACK_POP_TIL_POS_NOT;
       goto fail;
@@ -2700,10 +2703,6 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
       goto finish;
       break;
 
-    case OP_NEGATE:
-      STACK_POP_ONE;
-      best_len = ONIG_MISMATCH_FROM_NEGATE;
-      /* fall */
     fail:
       MOP_OUT;
       /* fall */

@@ -900,10 +900,16 @@ class TestRegexp < Test::Unit::TestCase
     assert_match(/(?v:ruby)/, "perl")
 
     assert_no_match(/a(?v:b)c/, "abc")
-    assert_match(/a(?v:b)c/, "ac")
+    assert_no_match(/a(?v:b)c/, "ac")
     assert_match(/a(?v:b)c/, "axc")
-    assert_match(/a(?v:b)c/, "axbc")
-    assert_match(/a(?v:b)c/, "axbcbc")
+    assert_no_match(/a(?v:b)c/, "axbc")
+    assert_no_match(/a(?v:b)c/, "axbcbc")
+
+    # Yui NARUSE's examples
+    assert_no_match(/a(?v:b)c/, "ab_c")
+    assert_no_match(/a(?v:b)c/, "a_bc")
+    assert_no_match(/"[^<&"]*"/, '"aa<&a"')
+    assert_no_match(/"(?v:<|&|")*"/, '"aa<&a"')
 
     languages = %w[ruby perl python lisp smalltalk]
     assert_equal %w[perl lisp smalltalk], languages.grep(/l/)

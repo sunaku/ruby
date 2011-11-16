@@ -4599,9 +4599,6 @@ static int parse_subexp(Node** top, OnigToken* tok, int term,
 			UChar** src, UChar* end, ScanEnv* env);
 
 static int
-set_quantifier(Node* qnode, Node* target, int group, ScanEnv* env);
-
-static int
 parse_enclose(Node** np, OnigToken* tok, int term, UChar** src, UChar* end,
 	      ScanEnv* env)
 {
@@ -4799,59 +4796,39 @@ parse_enclose(Node** np, OnigToken* tok, int term, UChar** src, UChar* end,
 	    if (r < 0) return r;
 	    *np = node_new_option(option);
 	    CHECK_NULL_RETURN_MEMERR(*np);
-            /* expand "(?v:r)" into "(?:rN)?" where "N" is OP_NEGATE */
-            /* NOTE: OP_NEGATE is emitted in compile_quantifier_node() */
+            /* expand "(?v:r)" into "(?:(?!r).)" */
             if (IS_NEGATE(option)) {
-              Node *tmp;
-              int tmpr;
+              Node *seq, *nla, *any;
 
-              tmp = node_new_quantifier(0, 1, 0);
-              CHECK_NULL_RETURN_MEMERR(tmp);
-              tmpr = set_quantifier(tmp, target, 1, env);
-              if (tmpr < 0) {
-                onig_node_free(tmp);
-                return tmpr;
-              }
-              target = tmp;
-            }
-	    NENCLOSE(*np)->target = target;
-            /* append ".*?" to "(?:rN)?" where "N" is OP_NEGATE */
-            if (IS_NEGATE(option)) {
-              Node *tmp, *tmp_qtfr, *tmp_any;
-              int tmpr;
+              /* build "(?!r)" */
+              nla = onig_node_new_anchor(ANCHOR_PREC_READ_NOT);
+              CHECK_NULL_RETURN_MEMERR(nla);
+              NANCHOR(nla)->target = target;
 
               /* build "." */
-              tmp_any = node_new_anychar();
-              CHECK_NULL_RETURN_MEMERR(tmp_any);
-
-              /* build "*?" */
-              tmp_qtfr = node_new_quantifier(0, REPEAT_INFINITE, 0);
-              CHECK_NULL_RETURN_MEMERR(tmp_qtfr);
-              NQTFR(tmp_qtfr)->greedy = 0;
-
-              /* join "." to "*?" */
-              tmpr = set_quantifier(tmp_qtfr, tmp_any, 1, env);
-              if (tmpr < 0) {
-                onig_node_free(tmp_any);
-                onig_node_free(tmp_qtfr);
-                return tmpr;
-              }
-
-              /* append ".*?" */
-              *np = node_new_list(*np, NULL);
-              if (IS_NULL(*np)) {
-                onig_node_free(tmp_any);
-                onig_node_free(tmp_qtfr);
+              any = node_new_anychar();
+              if (IS_NULL(any)) {
+                onig_node_free(nla);
                 return ONIGERR_MEMORY;
               }
-              tmp = NCDR(*np) = node_new_list(tmp_qtfr, NULL);
-              if (IS_NULL(tmp)) {
-                onig_node_free(tmp_any);
-                onig_node_free(tmp_qtfr);
+
+              /* put "(?!r)" and "." in sequence: "(?!r)." */
+              seq = node_new_list(nla, NULL);
+              if (IS_NULL(seq)) {
+                onig_node_free(nla);
+                onig_node_free(any);
                 return ONIGERR_MEMORY;
               }
-              np = &(NCAR(tmp));
+              NCDR(seq) = node_new_list(any, NULL);
+              if (IS_NULL(NCDR(seq))) {
+                onig_node_free(nla);
+                onig_node_free(any);
+                onig_node_free(seq);
+                return ONIGERR_MEMORY;
+              }
+              target = seq;
             }
+	    NENCLOSE(*np)->target = target;
 	    *src = p;
 	    return 0;
 	  }
