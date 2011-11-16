@@ -2629,9 +2629,6 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
       continue;
       break;
 
-    case OP_NEGATE:
-      best_len = ONIG_MISMATCH_FROM_NEGATE;
-      /* fall */
     case OP_FAIL_POS:  MOP_IN(OP_FAIL_POS);
       STACK_POP_TIL_POS_NOT;
       goto fail;
@@ -3436,9 +3433,7 @@ onig_search(regex_t* reg, const UChar* str, const UChar* end,
 #ifdef USE_FIND_LONGEST_SEARCH_ALL_OF_RANGE
 #define MATCH_AND_RETURN_CHECK(upper_range) \
   r = match_at(reg, str, end, (upper_range), s, prev, &msa); \
-  if (r == ONIG_MISMATCH_FROM_NEGATE)\
-    goto mismatch;\
-  else if (r != ONIG_MISMATCH) {\
+  if (r != ONIG_MISMATCH) {\
     if (r >= 0) {\
       if (! IS_FIND_LONGEST(reg->options)) {\
         goto match;\
@@ -3449,9 +3444,7 @@ onig_search(regex_t* reg, const UChar* str, const UChar* end,
 #else
 #define MATCH_AND_RETURN_CHECK(upper_range) \
   r = match_at(reg, str, end, (upper_range), s, prev, &msa); \
-  if (r == ONIG_MISMATCH_FROM_NEGATE)\
-    goto mismatch_no_msa;\
-  else if (r != ONIG_MISMATCH) {\
+  if (r != ONIG_MISMATCH) {\
     if (r >= 0) {\
       goto match;\
     }\
@@ -3462,9 +3455,7 @@ onig_search(regex_t* reg, const UChar* str, const UChar* end,
 #ifdef USE_FIND_LONGEST_SEARCH_ALL_OF_RANGE
 #define MATCH_AND_RETURN_CHECK(none) \
   r = match_at(reg, str, end, s, prev, &msa);\
-  if (r == ONIG_MISMATCH_FROM_NEGATE)\
-    goto mismatch;\
-  else if (r != ONIG_MISMATCH) {\
+  if (r != ONIG_MISMATCH) {\
     if (r >= 0) {\
       if (! IS_FIND_LONGEST(reg->options)) {\
         goto match;\
@@ -3475,9 +3466,7 @@ onig_search(regex_t* reg, const UChar* str, const UChar* end,
 #else
 #define MATCH_AND_RETURN_CHECK(none) \
   r = match_at(reg, str, end, s, prev, &msa);\
-  if (r == ONIG_MISMATCH_FROM_NEGATE)\
-    goto mismatch_no_msa;\
-  else if (r != ONIG_MISMATCH) {\
+  if (r != ONIG_MISMATCH) {\
     if (r >= 0) {\
       goto match;\
     }\

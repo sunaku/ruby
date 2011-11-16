@@ -4812,7 +4812,7 @@ parse_enclose(Node** np, OnigToken* tok, int term, UChar** src, UChar* end,
                 return ONIGERR_MEMORY;
               }
 
-              /* put "(?!r)" and "." in sequence: "(?!r)." */
+              /* put "(?!r)" and "." in sequence */
               seq = node_new_list(nla, NULL);
               if (IS_NULL(seq)) {
                 onig_node_free(nla);

@@ -536,7 +536,6 @@ enum OpCode {
   OP_MEMORY_END,
   OP_MEMORY_END_REC,      /* push marker to stack */
 
-  OP_NEGATE,             /* pop stack twice and move */
   OP_FAIL,               /* pop stack and move */
   OP_JUMP,
   OP_PUSH,

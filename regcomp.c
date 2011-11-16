@@ -1441,7 +1441,7 @@ compile_anchor_node(AnchorNode* node, regex_t* reg)
     if (r) return r;
     r = compile_tree(node->target, reg);
     if (r) return r;
-    r = add_opcode(reg, IS_NEGATE(reg->options) ? OP_NEGATE : OP_FAIL_POS);
+    r = add_opcode(reg, OP_FAIL_POS);
     break;
 
   case ANCHOR_LOOK_BEHIND:
@@ -5792,7 +5792,6 @@ OnigOpInfoType OnigOpInfo[] = {
   { OP_MEMORY_END_REC,      "mem-end-rec",          ARG_MEMNUM  },
   { OP_SET_OPTION_PUSH,     "set-option-push",      ARG_OPTION  },
   { OP_SET_OPTION,          "set-option",           ARG_OPTION  },
-  { OP_NEGATE,              "negate",               ARG_NON },
   { OP_FAIL,                "fail",                 ARG_NON },
   { OP_JUMP,                "jump",                 ARG_RELADDR },
   { OP_PUSH,                "push",                 ARG_RELADDR },

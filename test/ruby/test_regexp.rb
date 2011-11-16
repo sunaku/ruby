@@ -894,26 +894,59 @@ class TestRegexp < Test::Unit::TestCase
     assert_no_match(/ruby/v, "perlruby")
     assert_match(/ruby/v, "perl")
 
-    assert_no_match(/(?v:ruby)/, "ruby")
-    assert_no_match(/(?v:ruby)/, "rubyperl")
+    assert_match(/(?v:ruby)/, "ruby")
+    assert(/(?v:ruby)/ =~ "ruby")
+    assert_equal(["r", "u", "by"], [$`, $&, $'])
+
+    assert_no_match(/^(?v:ruby)/, "ruby")
+    assert(/^(?v:ruby)/ !~ "ruby")
+    assert_equal([nil, nil, nil], [$`, $&, $'])
+
+    assert_match(/(?v:ruby)/, "rubyperl")
+    assert(/(?v:ruby)/ =~ "rubyperl")
+    assert_equal(["r", "u", "byperl"], [$`, $&, $'])
+
+    assert_no_match(/^(?v:ruby)/, "rubyperl")
+    assert(/^(?v:ruby)/ !~ "rubyperl")
+    assert_equal([nil, nil, nil], [$`, $&, $'])
+
     assert_match(/(?v:ruby)/, "perlruby")
+    assert(/(?v:ruby)/ =~ "perlruby")
+    assert_equal(["", "p", "erlruby"], [$`, $&, $'])
+
+    assert_match(/^(?v:ruby)/, "perlruby")
+    assert(/^(?v:ruby)/ =~ "perlruby")
+    assert_equal(["", "p", "erlruby"], [$`, $&, $'])
+
     assert_match(/(?v:ruby)/, "perl")
+    assert(/(?v:ruby)/ =~ "perl")
+    assert_equal(["", "p", "erl"], [$`, $&, $'])
+
+    assert_match(/^(?v:ruby)/, "perl")
+    assert(/^(?v:ruby)/ =~ "perl")
+    assert_equal(["", "p", "erl"], [$`, $&, $'])
 
     assert_no_match(/a(?v:b)c/, "abc")
+    assert(/a(?v:b)c/ !~ "abc")
+    assert_equal([nil, nil, nil], [$`, $&, $'])
+
     assert_no_match(/a(?v:b)c/, "ac")
+    assert_match(/a(?v:b)?c/, "ac")
     assert_match(/a(?v:b)c/, "axc")
     assert_no_match(/a(?v:b)c/, "axbc")
-    assert_no_match(/a(?v:b)c/, "axbcbc")
+    assert_no_match(/a(?v:b)+c/, "axbc")
+    assert_match(/a(?v:b)bc/, "axbc")
 
-    # Yui NARUSE's examples
     assert_no_match(/a(?v:b)c/, "ab_c")
     assert_no_match(/a(?v:b)c/, "a_bc")
+    assert_match(/a(?v:b)bc/, "a_bc")
     assert_no_match(/"[^<&"]*"/, '"aa<&a"')
+    assert_no_match(/"(?v:[<&"])*"/, '"aa<&a"')
     assert_no_match(/"(?v:<|&|")*"/, '"aa<&a"')
 
     languages = %w[ruby perl python lisp smalltalk]
     assert_equal %w[perl lisp smalltalk], languages.grep(/l/)
     assert_equal %w[ruby python], languages.grep(/l/v)
-    assert_equal %w[ruby perl python smalltalk], languages.grep(/(?v:l)/)
+    assert_equal %w[ruby perl python smalltalk], languages.grep(/^(?v:l)/)
   end
 end
